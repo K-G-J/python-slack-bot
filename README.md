@@ -10,4 +10,5 @@ An example chat python bot for Slack.
 - slackeventsapi
 - flask
 - string
+- datetime
 - python-dotenv

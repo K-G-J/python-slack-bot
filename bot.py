@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from flask import Flask, request, Response
 from slackeventsapi import SlackEventAdapter
 import string
+from datetime import datetime, timedelta
 
 
 env_path = Path('.')/'.env'
@@ -23,6 +24,13 @@ message_counts = {}
 welcome_messages = {}
 
 BAD_WORDS = ['hmm', 'no', 'tim']
+
+SCHEDULED_MESSAGES = [
+    {'text': 'First message', 'post_at': (
+        datetime.now() + timedelta(seconds=20)).timestamp(), 'channel': 'C04UX93MXLL'},
+    {'text': 'Second Message!', 'post_at': (
+        datetime.now() + timedelta(seconds=30)).timestamp(), 'channel': 'C04UX93MXLL'}
+]
 
 
 class WelcomeMessage:
@@ -83,6 +91,36 @@ def send_welcome_message(channel, user):
     welcome_messages[channel][user] = welcome
 
 
+def list_scheduled_messages(channel):
+    response = client.chat_scheduledMessages_list(channel=channel)
+    messages = response.data.get('scheduled_messages')
+    ids = []
+    for msg in messages:
+        ids.append(msg.get('id'))
+
+    return ids
+
+
+def schedule_messages(messages):
+    ids = []
+    for msg in messages:
+        response = client.chat_scheduleMessage(
+            channel=msg['channel'], text=msg['text'], post_at=msg['post_at']).data
+        id_ = response.get('scheduled_message_id')
+        ids.append(id_)
+
+    return ids
+
+
+def delete_scheduled_messages(ids, channel):
+    for _id in ids:
+        try:
+            client.chat_deleteScheduledMessage(
+                channel=channel, scheduled_message_id=_id)
+        except Exception as e:
+            print(e)
+
+
 def check_if_bad_words(message):
     msg = message.lower()
     msg = msg.translate(str.maketrans('', '', string.punctuation))
@@ -141,4 +179,7 @@ def message_count():
 
 
 if __name__ == '__main__':
+    schedule_messages(SCHEDULED_MESSAGES)
+    ids = list_scheduled_messages('C04UX93MXLL')
+    delete_scheduled_messages(ids, 'C04UX93MXLL')
     app.run(debug=True, port=8080)

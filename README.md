@@ -9,4 +9,5 @@ An example chat python bot for Slack.
 - slackclient
 - slackeventsapi
 - flask
+- string
 - python-dotenv
